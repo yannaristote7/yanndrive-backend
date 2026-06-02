@@ -25,7 +25,7 @@ class DocumentController extends Controller
     {
         // Validation
         $request->validate([
-            'file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png'
+            'file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,txt,zip'
         ]);
 
         // Récupération fichier
