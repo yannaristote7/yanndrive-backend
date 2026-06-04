@@ -10,6 +10,7 @@ class DocumentShare extends Model
     use HasFactory;
     protected $fillable = [
         'document_id',
+        'user_id',  
         'token',
         'expires_at',
         'max_downloads',
