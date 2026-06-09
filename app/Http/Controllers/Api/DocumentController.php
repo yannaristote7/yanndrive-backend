@@ -47,36 +47,37 @@ class DocumentController extends Controller
      * Liste des documents
      */
     public function index(Request $request)
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
+    $perPage = $request->get('per_page', 10); 
 
-        if ($user->role && $user->role->name === 'admin') {
-            $documents = Document::with(['user', 'sharedWith'])
-                ->latest()
-                ->get();
-
-            return response()->json([
-                'type'      => 'admin',
-                'documents' => $documents
-            ]);
-        }
-
-        $ownedDocuments = $user->documents()
-            ->with('sharedWith')
+    if ($user->role && $user->role->name === 'admin') {
+        $documents = Document::with(['user', 'sharedWith'])
             ->latest()
-            ->get();
-
-        $sharedDocuments = $user->sharedDocuments()
-            ->with('user')
-            ->latest()
-            ->get();
+            ->paginate($perPage);
 
         return response()->json([
-            'type'             => 'user',
-            'owned_documents'  => $ownedDocuments,
-            'shared_documents' => $sharedDocuments
+            'type'      => 'admin',
+            'documents' => $documents
         ]);
     }
+
+    $ownedDocuments = $user->documents()
+        ->with('sharedWith')
+        ->latest()
+        ->paginate($perPage);
+
+    $sharedDocuments = $user->sharedDocuments()
+        ->with('user')
+        ->latest()
+        ->paginate($perPage);
+
+    return response()->json([
+        'type'             => 'user',
+        'owned_documents'  => $ownedDocuments,
+        'shared_documents' => $sharedDocuments
+    ]);
+}
 
     /**
      * Télécharger un document
