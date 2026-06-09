@@ -49,10 +49,12 @@ class DocumentController extends Controller
     public function index(Request $request)
 {
     $user = $request->user();
-    $perPage = $request->get('per_page', 10); 
+    $perPage = $request->get('per_page', 10);
+    $search = $request->get('search', '');
 
     if ($user->role && $user->role->name === 'admin') {
         $documents = Document::with(['user', 'sharedWith'])
+            ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"))
             ->latest()
             ->paginate($perPage);
 
@@ -64,11 +66,13 @@ class DocumentController extends Controller
 
     $ownedDocuments = $user->documents()
         ->with('sharedWith')
+        ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"))
         ->latest()
         ->paginate($perPage);
 
     $sharedDocuments = $user->sharedDocuments()
         ->with('user')
+        ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"))
         ->latest()
         ->paginate($perPage);
 
