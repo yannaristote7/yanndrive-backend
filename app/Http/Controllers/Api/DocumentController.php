@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use App\Mail\ShareLinkMail;
 use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Log;
 
 class DocumentController extends Controller
 {
@@ -149,57 +150,62 @@ class DocumentController extends Controller
     /**
      * Génération d'un lien public
      */
-    public function generatePublicLink(Request $request, Document $document)
-    {
-        if ($request->user()->id !== $document->user_id && $request->user()->role->name !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+   public function generatePublicLink(Request $request, Document $document)
+{
+    if ($request->user()->id !== $document->user_id && $request->user()->role->name !== 'admin') {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
 
-        $validated = $request->validate([
-            'permission'      => 'required|in:read,edit',
-            'allow_download'  => 'required|boolean',
-            'expires_in_days' => 'required|integer|min:1|max:30',
-            'password'        => 'nullable|string|min:4',
-            'email'           => 'nullable|email'
-        ]);
+    $validated = $request->validate([
+        'permission'      => 'required|in:read,edit',
+        'allow_download'  => 'required|boolean',
+        'expires_in_days' => 'required|integer|min:1|max:30',
+        'password'        => 'nullable|string|min:4',
+        'email'           => 'nullable|email'
+    ]);
 
-        $share = DocumentShare::create([
-            'document_id'    => $document->id,
-            'user_id'        => $request->user()->id,
-            'token'          => Str::uuid(),
-            'expires_at'     => now()->addDays($validated['expires_in_days']),
-            'permission'     => $validated['permission'],
-            'allow_download' => $validated['allow_download'],
-            'password'       => $validated['password'] ? bcrypt($validated['password']) : null
-        ]);
+    $share = DocumentShare::create([
+        'document_id'    => $document->id,
+        'user_id'        => $request->user()->id,
+        'token'          => Str::uuid(),
+        'expires_at'     => now()->addDays($validated['expires_in_days']),
+        'permission'     => $validated['permission'],
+        'allow_download' => $validated['allow_download'],
+        'password'       => $validated['password'] ? bcrypt($validated['password']) : null
+    ]);
 
-        $signedUrl = URL::temporarySignedRoute(
-            'public.share',
-            $share->expires_at,
-            ['token' => $share->token]
-        );
+    $signedUrl = URL::temporarySignedRoute(
+        'public.share',
+        $share->expires_at,
+        ['token' => $share->token]
+    );
 
-        if (!empty($validated['email'])) {
+    // Envoi email — ne doit jamais faire planter la génération du lien
+    if (!empty($validated['email'])) {
+        try {
             Mail::to($validated['email'])
                 ->send(new ShareLinkMail($signedUrl, $share->expires_at));
+        } catch (\Exception $e) {
+            Log::warning('Email non envoyé pour le partage : ' . $e->getMessage());
         }
-
-        ActivityLog::create([
-            'user_id'      => $request->user()->id,
-            'action'       => 'document_shared',
-            'description'  => 'Lien public généré',
-            'ip_address'   => $request->ip(),
-            'user_agent'   => $request->userAgent(),
-            'success'      => true,
-            'loggable_id'  => $share->id,
-            'loggable_type' => DocumentShare::class
-        ]);
-
-        return response()->json([
-            'public_url' => $signedUrl,
-            'expires_at' => $share->expires_at
-        ]);
     }
+
+    ActivityLog::create([
+        'user_id'      => $request->user()->id,
+        'action'       => 'document_shared',
+        'description'  => 'Lien public généré',
+        'ip_address'   => $request->ip(),
+        'user_agent'   => $request->userAgent(),
+        'success'      => true,
+        'loggable_id'  => $share->id,
+        'loggable_type' => DocumentShare::class
+    ]);
+
+    return response()->json([
+        'public_url' => $signedUrl,
+        'expires_at' => $share->expires_at
+    ]);
+}
 
     /**
      * Accès via lien public
