@@ -13,8 +13,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Auth publique
-Route::post('/register', [AuthController::class, 'register'])->middleware(CheckAllowedDomain::class);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])
+    ->middleware([CheckAllowedDomain::class, 'throttle:3,1']);
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware(['signed', 'throttle:5,1']);
 
 // Routes protégées
 Route::middleware('auth:sanctum')->group(function () {
