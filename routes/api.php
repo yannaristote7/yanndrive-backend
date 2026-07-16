@@ -16,7 +16,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register'])
     ->middleware([CheckAllowedDomain::class, 'throttle:3,1']);
 Route::post('/login', [AuthController::class, 'login'])
-    ->middleware(['signed', 'throttle:5,1']);
+    ->middleware('throttle:5,1');
 
 // Routes protégées
 Route::middleware('auth:sanctum')->group(function () {
@@ -30,10 +30,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy']);
 
     // Partage interne par email
-    Route::post('/documents/{id}/share', [DocumentController::class, 'share']);
+    Route::post('/documents/{id}/share', [DocumentController::class, 'share'])->middleware('throttle:5,1');
 
     // Lien public ← la route manquante
-    Route::post('/documents/{document}/public-link', [DocumentController::class, 'generatePublicLink']);
+    Route::post('/documents/{document}/public-link', [DocumentController::class, 'generatePublicLink'])->middleware('throttle:5,1');
 
     // Admin logs
     Route::get('/admin/logs', [ActivityLogController::class, 'index']);
