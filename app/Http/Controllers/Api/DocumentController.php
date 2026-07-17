@@ -22,27 +22,52 @@ class DocumentController extends Controller
      * Upload d'un document
      */
     public function store(Request $request)
-    {
-        $request->validate([
-            'file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,txt,zip'
-        ]);
+{
+    $request->validate([
+        'file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,txt,zip'
+    ]);
 
-        $file = $request->file('file');
-        $path = $file->store('documents');
+    $user = $request->user();
+    $file = $request->file('file');
 
-        $document = Document::create([
-            'user_id'   => $request->user()->id,
-            'name'      => $file->getClientOriginalName(),
-            'path'      => $path,
-            'mime_type' => $file->getMimeType(),
-            'size'      => $file->getSize()
-        ]);
+    // Quota de stockage : 500 MB par utilisateur
+    $maxStorage = 500 * 1024 * 1024; // 500 MB en octets
+    $currentUsage = $user->documents()->sum('size');
 
+    if ($currentUsage + $file->getSize() > $maxStorage) {
         return response()->json([
-            'message'  => 'Document uploadé avec succès',
-            'document' => $document
-        ], 201);
+            'message' => 'Quota de stockage dépassé. Supprimez des fichiers ou contactez un administrateur.'
+        ], 403);
     }
+
+    $path = $file->store('documents');
+
+    $document = Document::create([
+        'user_id'   => $user->id,
+        'name'      => $file->getClientOriginalName(),
+        'path'      => $path,
+        'mime_type' => $file->getMimeType(),
+        'size'      => $file->getSize()
+    ]);
+
+    return response()->json([
+        'message'  => 'Document uploadé avec succès',
+        'document' => $document
+    ], 201);
+}
+
+public function storageUsage(Request $request)
+{
+    $user = $request->user();
+    $used = $user->documents()->sum('size');
+    $max = 500 * 1024 * 1024;
+
+    return response()->json([
+        'used' => $used,
+        'max' => $max,
+        'percentage' => round(($used / $max) * 100, 1)
+    ]);
+}
 
     /**
      * Liste des documents
