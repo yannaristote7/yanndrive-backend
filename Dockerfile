@@ -13,4 +13,7 @@ WORKDIR /var/www
 COPY . .
 RUN composer install --optimize-autoloader --no-dev
 
-CMD php artisan serve --host=0.0.0.0 --port=$PORT
+COPY docker/start.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]
