@@ -78,7 +78,7 @@ public function storageUsage(Request $request)
     $perPage = $request->get('per_page', 10);
     $search = $request->get('search', '');
 
-    if ($user->role && $user->role->name === 'admin') {
+    if ($user->isAdmin()) {
         $documents = Document::with(['user', 'sharedWith'])
             ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"))
             ->latest()
@@ -117,7 +117,7 @@ public function storageUsage(Request $request)
         $document = Document::findOrFail($id);
         $user     = $request->user();
 
-        $hasAccess = $user->role->name === 'admin'
+        $hasAccess = $user->isAdmin()
             || $document->user_id === $user->id
             || $document->sharedWith->contains($user->id);
 
@@ -136,7 +136,7 @@ public function storageUsage(Request $request)
         $document = Document::findOrFail($id);
         $user     = $request->user();
 
-        if ($user->role->name !== 'admin' && $document->user_id !== $user->id) {
+        if (! $user->isAdmin() && $document->user_id !== $user->id) {
             return response()->json(['message' => 'Accès non autorisé'], 403);
         }
 
@@ -158,7 +158,7 @@ public function storageUsage(Request $request)
         $document = Document::findOrFail($id);
         $user     = $request->user();
 
-        if ($document->user_id !== $user->id && $user->role->name !== 'admin') {
+        if ($document->user_id !== $user->id && ! $user->isAdmin()) {
             return response()->json(['message' => 'Seul le propriétaire peut partager'], 403);
         }
 
@@ -177,7 +177,7 @@ public function storageUsage(Request $request)
      */
    public function generatePublicLink(Request $request, Document $document)
 {
-    if ($request->user()->id !== $document->user_id && $request->user()->role->name !== 'admin') {
+    if ($request->user()->id !== $document->user_id && ! $request->user()->isAdmin()) {
         return response()->json(['message' => 'Unauthorized'], 403);
     }
 

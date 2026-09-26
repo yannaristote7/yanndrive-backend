@@ -23,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
     {
         if (app()->environment('production')) {
             URL::forceScheme('https');
+
+            // Ne jamais exposer stack traces et requêtes SQL en production
+            config(['app.debug' => false]);
         }
     }
 }

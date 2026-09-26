@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use App\Models\Domain;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -34,10 +36,12 @@ class AuthApiTest extends TestCase
 
     public function test_user_can_register()
 {
+    Domain::create(['domain' => 'yamsgroup.com']);
+    Role::create(['name' => 'user']);
 
     $response = $this->postJson('/api/register', [
         'name' => 'Test User',
-        'email' => 'test@test.com',
+        'email' => 'test@yamsgroup.com',
         'password' => 'password',
         'password_confirmation' => 'password'
     ]);

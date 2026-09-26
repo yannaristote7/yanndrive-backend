@@ -15,12 +15,15 @@ class ActivityLogController extends Controller
 
     public function index(Request $request)
     {
-        // Sécurité : admin seulement
-        if ($request->user()->role->name !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        // Sécurité : admin seulement (Gate "admin" appliqué sur la route)
+        $search = $request->get('search');
 
         $logs = ActivityLog::with('user')
+            ->when($request->filled('success'), fn ($q) => $q->where('success', $request->boolean('success')))
+            ->when($search, fn ($q) => $q->where(fn ($q) => $q
+                ->where('action', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%")
+                ->orWhereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%"))))
             ->latest()
             ->paginate(20);
 
@@ -35,10 +38,6 @@ class ActivityLogController extends Controller
 
     public function stats(Request $request)
     {
-        if ($request->user()->role->name !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
         return response()->json([
             'total_logs' => ActivityLog::count(),
             'success_logs' => ActivityLog::where('success', true)->count(),

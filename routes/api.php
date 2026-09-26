@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Middleware\CheckAllowedDomain;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\Api\Admin\DomainController as AdminDomainController;
+use App\Http\Controllers\Api\Admin\StatsController as AdminStatsController;
+use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 
 // User avec role
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -18,14 +21,12 @@ Route::post('/register', [AuthController::class, 'register'])
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:5,1');
 
-
-
-Route::get('/storage-usage', [DocumentController::class, 'storageUsage']);
-
 // Routes protégées
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::get('/storage-usage', [DocumentController::class, 'storageUsage']);
 
     // Documents
     Route::get('/documents', [DocumentController::class, 'index']);
@@ -39,9 +40,24 @@ Route::middleware('auth:sanctum')->group(function () {
     // Lien public ← la route manquante
     Route::post('/documents/{document}/public-link', [DocumentController::class, 'generatePublicLink'])->middleware('throttle:5,1');
 
-    // Admin logs
-    Route::get('/admin/logs', [ActivityLogController::class, 'index']);
-    Route::get('/admin/logs/stats', [ActivityLogController::class, 'stats']);
+    // Panneau d'administration
+    Route::middleware('can:admin')->prefix('admin')->group(function () {
+        Route::get('/stats', AdminStatsController::class);
+
+        Route::get('/logs', [ActivityLogController::class, 'index']);
+        Route::get('/logs/stats', [ActivityLogController::class, 'stats']);
+
+        Route::get('/roles', [AdminUserController::class, 'roles']);
+        Route::get('/users', [AdminUserController::class, 'index']);
+        Route::post('/users', [AdminUserController::class, 'store']);
+        Route::patch('/users/{user}', [AdminUserController::class, 'update']);
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
+        Route::post('/users/{user}/revoke-tokens', [AdminUserController::class, 'revokeTokens']);
+
+        Route::get('/domains', [AdminDomainController::class, 'index']);
+        Route::post('/domains', [AdminDomainController::class, 'store']);
+        Route::delete('/domains/{domain}', [AdminDomainController::class, 'destroy']);
+    });
 });
 
 // Accès lien public (sans auth)

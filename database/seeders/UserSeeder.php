@@ -10,7 +10,13 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $role = Role::where('name', 'user')->first();
+        // Comptes de démo avec mot de passe connu : jamais en production
+        if (app()->environment('production')) {
+            $this->command?->warn('UserSeeder ignoré en production.');
+            return;
+        }
+
+        $role = Role::firstOrCreate(['name' => 'user']);
 
         $users = [
             ['name' => 'Alice Martin',  'email' => 'alice@yamslogistics.com'],
@@ -19,9 +25,8 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($users as $u) {
-            User::create([
+            User::updateOrCreate(['email' => $u['email']], [
                 'name'     => $u['name'],
-                'email'    => $u['email'],
                 'password' => Hash::make('password'),
                 'role_id'  => $role->id
             ]);

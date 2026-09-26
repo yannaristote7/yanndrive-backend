@@ -4,6 +4,11 @@ services:
     build: .
     volumes:
       - ./:/var/www
+    environment:
+      # Surcharge le .env (configuré pour Laragon) à l'intérieur du conteneur
+      DB_HOST: db
+      DB_USERNAME: ${DOCKER_DB_USERNAME:-yamsdrive}
+      DB_PASSWORD: ${DOCKER_DB_PASSWORD:?Définir DOCKER_DB_PASSWORD dans .env}
     depends_on:
       - db
   nginx:
@@ -19,7 +24,9 @@ services:
     image: mysql:8
     environment:
       MYSQL_DATABASE: yamsdrive
-      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_USER: ${DOCKER_DB_USERNAME:-yamsdrive}
+      MYSQL_PASSWORD: ${DOCKER_DB_PASSWORD:?Définir DOCKER_DB_PASSWORD dans .env}
+      MYSQL_ROOT_PASSWORD: ${DOCKER_DB_ROOT_PASSWORD:?Définir DOCKER_DB_ROOT_PASSWORD dans .env}
     volumes:
       - db_data:/var/lib/mysql
 volumes:

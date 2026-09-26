@@ -13,12 +13,9 @@ class Role extends Model
      * Champs autorisés à l'insertion en masse.
      * Cela permet de créer un rôle via Role::create([...]).
      */
-   protected $fillable = [
-    'name',
-    'email',
-    'password',
-    'role_id',  // 🔥 indispensable
-];
+    protected $fillable = [
+        'name',
+    ];
 
     /**
      * Relations

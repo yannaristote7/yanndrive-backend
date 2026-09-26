@@ -15,17 +15,28 @@ class RoleSeeder extends Seeder
     public function run(): void
     {
         // Insertion des rôles
-        Role::insert([
-            ['name' => 'admin'],
-            ['name' => 'user'],
-        ]);
+        $admin = Role::firstOrCreate(['name' => 'admin']);
+        Role::firstOrCreate(['name' => 'user']);
 
-        // Création de l'utilisateur admin
-        User::create([
+        // En production : admin initial uniquement via ADMIN_EMAIL / ADMIN_PASSWORD
+        // (jamais de mot de passe connu). En local : compte de démo.
+        if (app()->environment('production')) {
+            $email = env('ADMIN_EMAIL');
+            $password = env('ADMIN_PASSWORD');
+
+            if (! $email || ! $password) {
+                $this->command?->warn('ADMIN_EMAIL / ADMIN_PASSWORD non définis : aucun admin créé.');
+                return;
+            }
+        } else {
+            $email = 'admin@yams.com';
+            $password = 'password';
+        }
+
+        User::firstOrCreate(['email' => $email], [
             'name'     => 'Admin',
-            'email'    => 'admin@yams.com',
-            'password' => Hash::make('password'),
-            'role_id'  => 1, // admin
+            'password' => Hash::make($password),
+            'role_id'  => $admin->id,
         ]);
     }
 }

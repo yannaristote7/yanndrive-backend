@@ -10,8 +10,8 @@ class DomainSeeder extends Seeder
 {
     public function run(): void
     {
-       Domain::create(['domain' => 'yamslogistics.com']);
-       Domain::create(['domain' => 'yamsgroup.com']);
-       Domain::create(['domain' => 'yamscorporate.com']);
+        foreach (['yamslogistics.com', 'yamsgroup.com', 'yamscorporate.com'] as $domain) {
+            Domain::firstOrCreate(['domain' => $domain]);
+        }
     }
 }
